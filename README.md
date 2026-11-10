@@ -1,58 +1,121 @@
 # catsay
 
-A bored user asked an LLM to upgrade cowsay to 2026. The cow became a cat. The cat got a hat. Nobody got any work done.
-
-![The Catsay cat walking in its crooked black hat](docs/catsay.gif)
-
-A little familiar for your terminal. A smoky gray cat in a crooked black hat strolls in, types a thought into a speech bubble, blinks its amber eyes, swishes its tail, and strolls away. Muted sage highlights and a small brass moon charm keep the transparent sprite readable against a dark terminal. Rendered through the Kitty graphics protocol.
-
-Made for a laugh with the **Linux.chat Discord community**. The built-in monologue greets Linux.chat, explains this very questionable use of a computer, and ends on its own.
+A smoky gray cat in a crooked black hat, causing entirely unnecessary trouble
+in your Kitty terminal. Give it something to say, chase yarn, or let it steal
+letters from your screen.
 
 ## Run
 
-Requires Python 3.10+ and [Kitty](https://sw.kovidgoyal.net/kitty/). Tested on Linux. No Python packages, network access, or background services are needed to run it. Run directly in Kitty, outside tmux:
+Requires Python 3.10+ and [Kitty](https://sw.kovidgoyal.net/kitty/). No Python
+packages or background services are needed. Run directly in Kitty, outside tmux.
+
+```sh
+./catsay                         # show help
+./catsay "The build passed."      # say your message, then leave
+printf 'Time for coffee.' | ./catsay
+./catsay --pet "Remember to stretch."
+./catsay --loop "You should probably be working."
+```
+
+Supply a message or choose a play mode.
+**Space** advances message pages, **p** pauses, and **q**, **Escape**, or
+**Ctrl+C** exits. `--pet` adds wandering between message pages. `--loop`
+repeats until dismissed; `--duration` sets a time limit.
+
+The terminal screen and input settings are restored on exit. Speech is visual,
+with no audio or AI service. Redirected output emits plain text.
+
+Use `--size 180`, `--size 270`, or `--size 360` to choose the cat's size.
+Pass just one number: `catsay --yarn --size 180`. Braces such as
+`{180,270,360}` expand into separate arguments in the shell; extra words are
+treated as the cat's message.
+`--speed`, `--hold`, `--typing-speed`, and `--fps` adjust the animation.
+Long messages wrap into pages.
+
+## Install for your user
 
 ```sh
 git clone https://github.com/mathisen99/catsay.git
 cd catsay
-./catsay --pet
+python3 tools/install.py --zshrc ~/.zshrc
+source ~/.zshrc
+catsay
+catsay "Hello from anywhere."
 ```
 
-The cat walks in, delivers the full monologue, wanders between remarks, then walks off and returns you to your shell. **It does not loop.** This is the command to use when recording a video.
+This installs the runtime and bundled PNGs under `~/.local/share/catsay`, adds
+`~/.local/bin/catsay`, and creates a plain `catsay` alias. Running it without a
+message or play flag shows help; press **q** to dismiss an animation early. The
+installation works even if you move the checkout. No sudo or Python packages
+are needed. The installer saves
+your original shell configuration as `~/.zshrc.catsay.bak` before adding the alias;
+rerunning it updates the installed runtime without duplicating the alias.
 
-More options:
+Omit `--zshrc` to install just the command. Ensure `~/.local/bin` is in your PATH.
+For plain text in scripts, the installed command also accepts piped input.
+
+## Terminal mischief
 
 ```sh
-./catsay "Hello, Linux.chat!"
-printf 'The build passed. Time for a coffee.' | ./catsay
-./catsay --demo
-./catsay --pet
-./catsay --pet "Remember to drink some water."
-./catsay --pet --duration 60
-./catsay --loop
-./catsay --character cow --pet
+catsay --yarn                 # chase a bouncing ball over your actual terminal
+catsay --laser                # chase the red dot; space moves it
+catsay --zoomies              # high-speed terminal parkour
+catsay --overlay              # a quiet stroll across your existing text
+catsay --steal                # pull letters out of your terminal and carry them off
+catsay --yarn --loop          # endless terrible productivity
+catsay --zoomies --duration 8 --size 180
 ```
 
-**Space** advances the dialogue, **p** pauses/resumes, and **q**, **Escape**, or **Ctrl+C** exits early. With no message, `./catsay` and `--demo` play the full monologue once; `--pet` adds wandering between remarks. Only `--loop` repeats indefinitely. `--duration` sets an optional time limit.
+These modes run for 20 seconds (16 for stealing) unless you give `--duration` or
+`--loop`. **p** pauses, **q** / **Escape** / **Ctrl+C** exits. The overlay modes
+draw only temporary graphics over the existing screen and restore the cursor
+when done. They need no screen-reading permission. They occupy the terminal
+until they finish.
 
-The previous terminal screen and input settings are restored on exit. Your companion occupies the terminal while running; it is not a shell background process. Speech is visual, with no audio or AI service. The original `./moosay` launcher also works; both launchers default to the cat, and `--character cow` selects the original cow.
+### Screen stealing
 
-Use `--size 180`, `--size 270`, or `--size 360` to choose a preferred size. It automatically fits smaller windows (minimum 36 columns × 16 rows). `--speed`, `--hold`, `--typing-speed`, and `--fps` adjust the animation. Long messages wrap into pages; redirected output emits plain text.
+`--steal` reads the visible text, including colors, into memory and animates a
+copy on the alternate screen. It returns to your original terminal afterwards.
+It never executes, edits, or sends commands to your shell. Ordinary text and
+colors are copied; existing terminal images are not copied.
 
-## How it works
+To enable it in Kitty:
 
-`moosay.py` uses Python’s standard library to upload the bundled PNG poses once, then moves cached images using cell positions plus pixel offsets. Walk, idle, talk, and blink poses are independently articulated, including the legs, head, tail, and charm. Synchronized terminal output batches each update. Resizes select a suitable sprite resolution. Cleanup deletes only this program’s image IDs.
+```sh
+python3 tools/install.py --kitty-config ~/.config/kitty/kitty.conf
+```
 
-The cat artwork is an original SVG rig in `tools/cat_art.py`; the cow rig and build script are in `tools/build_assets.py`. Each character has 72 poses bundled at three resolutions; there is no image renderer in the animation loop. To change/rebuild the art, install ImageMagick with SVG support and run:
+Reload Kitty with **Ctrl+Shift+F5** or open a new Kitty instance. The installer
+backs up the configuration and enables password-based remote control with the
+`catsay-screen` password restricted to `get-text`. This permits reading terminal
+text, including from other Kitty windows, without granting other remote control
+commands. To configure it manually, add:
+
+```conf
+allow_remote_control password
+remote_control_password catsay-screen get-text
+```
+
+See Kitty's [remote control documentation](https://sw.kovidgoyal.net/kitty/remote-control/).
+
+## Development
+
+`catsay.py` handles text, animation, and the Kitty graphics protocol;
+`playground.py` contains the play modes. The cat has 72 bundled PNG poses at
+three sizes. Frames are uploaded once and reused during animation.
+
+The original SVG rig lives in `tools/cat_art.py`. To rebuild the PNGs, install
+ImageMagick with SVG support and run:
 
 ```sh
 python3 tools/build_assets.py
-python3 tools/build_assets.py --character cow
 python3 -m unittest discover -s tests -v
 ```
 
+Intermediate SVGs use a temporary directory and are removed after the build.
 Protocol reference: [Kitty graphics protocol](https://sw.kovidgoyal.net/kitty/graphics-protocol/).
 
 ## License
 
-Code and original character artwork are available under the [MIT License](LICENSE). Built with LLM assistance, as the cat will happily explain at length.
+Code and original character artwork are available under the [MIT License](LICENSE).
+Built with LLM assistance.
